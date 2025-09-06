@@ -1,0 +1,74 @@
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AutofarmMenu"
+ScreenGui.Parent = game:GetService("CoreGui")
+
+local EnableButton = Instance.new("TextButton")
+local DisableButton = Instance.new("TextButton")
+
+EnableButton.Parent = ScreenGui
+EnableButton.Position = UDim2.new(0, 50, 0, 50)
+EnableButton.Size = UDim2.new(0, 150, 0, 50)
+EnableButton.Text = "Enable Autofarm"
+EnableButton.BackgroundColor3 = Color3.new(0, 1, 0)
+
+DisableButton.Parent = ScreenGui
+DisableButton.Position = UDim2.new(0, 50, 0, 110)
+DisableButton.Size = UDim2.new(0, 150, 0, 50)
+DisableButton.Text = "Disable Autofarm"
+DisableButton.BackgroundColor3 = Color3.new(1, 0, 0)
+
+local autofarmActive = false
+local connection
+
+local function startAutofarm()
+    if not autofarmActive then
+        autofarmActive = true
+        connection = game:GetService("RunService").RenderStepped:Connect(function()
+            game:GetService("ReplicatedStorage"):WaitForChild("StartPoopMinigameServer"):FireServer()
+            for i=1, 15 do
+                game:GetService("ReplicatedStorage"):WaitForChild("PoopBrainrotEvent"):FireServer(2, 6)
+            end
+            game:GetService("ReplicatedStorage"):WaitForChild("PoopSuccessEvent"):FireServer()
+        end)
+    end
+end
+
+local function stopAutofarm()
+    if autofarmActive then
+        autofarmActive = false
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
+    end
+end
+
+EnableButton.MouseButton1Click:Connect(startAutofarm)
+DisableButton.MouseButton1Click:Connect(stopAutofarm)
+
+local dragging = nil
+local offset = Vector2.new()
+
+local function makeDraggable(button)
+    button.Active = true
+    button.Draggable = false -- Custom drag handling
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = button
+            offset = input.Position - button.Position2
+        end
+    end)
+    button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = nil
+        end
+    end)
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging == button then
+            button.Position = UDim2.new(0, input.Position.X - offset.X, 0, input.Position.Y - offset.Y)
+        end
+    end)
+end
+
+makeDraggable(EnableButton)
+makeDraggable(DisableButton)
