@@ -1,0 +1,201 @@
+local Players    = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+
+local DEFAULTS = {
+    WalkSpeed = 16,
+    JumpPower = 50,
+    Gravity   = 196.2,
+    AnimSpeed = 5
+}
+
+
+local egorOn, freezeOn = false, false
+
+
+local old = LocalPlayer.PlayerGui:FindFirstChild("EgorExpandedUI")
+if old then old:Destroy() end
+
+local gui = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
+gui.Name = "EgorExpandedUI"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size              = UDim2.new(0,300,0,380)
+frame.Position          = UDim2.new(0.5,-150,0.5,-190)
+frame.BackgroundColor3  = Color3.fromRGB(28,28,30)
+frame.Active            = true
+frame.Draggable         = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
+local stroke = Instance.new("UIStroke", frame)
+stroke.Color         = Color3.fromRGB(60,60,60)
+stroke.Transparency  = 0.5
+
+local title = Instance.new("TextLabel", frame)
+title.Size               = UDim2.new(1,-20,0,18)
+title.Position           = UDim2.new(0,10,0,6)
+title.BackgroundTransparency = 1
+title.Text               = "created by polish.lol"
+title.Font               = Enum.Font.Gotham
+title.TextSize           = 12
+title.TextColor3         = Color3.fromRGB(200,200,200)
+
+
+local close = Instance.new("TextButton", frame)
+close.Size              = UDim2.new(0,24,0,24)
+close.Position          = UDim2.new(1,-30,0,6)
+close.Text              = "X"
+close.Font              = Enum.Font.GothamBold
+close.TextSize          = 14
+close.TextColor3        = Color3.new(1,1,1)
+close.BackgroundColor3  = frame.BackgroundColor3
+Instance.new("UICorner", close).CornerRadius = UDim.new(0,6)
+
+local function resetAll()
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = DEFAULTS.WalkSpeed
+            hum.JumpPower = DEFAULTS.JumpPower
+            for _, t in ipairs(hum:GetPlayingAnimationTracks()) do
+                t:AdjustSpeed(DEFAULTS.AnimSpeed)
+            end
+        end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.Anchored = false end
+    end
+    workspace.Gravity = DEFAULTS.Gravity
+    RunService:UnbindFromRenderStep("EgorRun")
+end
+
+close.MouseButton1Click:Connect(function()
+    resetAll()
+    gui:Destroy()
+end)
+
+
+local function makeButton(text, y)
+    local btn = Instance.new("TextButton", frame)
+    btn.Size              = UDim2.new(0,260,0,36)
+    btn.Position          = UDim2.new(0,20,0,y)
+    btn.BackgroundColor3  = Color3.fromRGB(45,45,48)
+    btn.AutoButtonColor   = false
+    btn.Font              = Enum.Font.GothamBold
+    btn.TextSize          = 14
+    btn.TextColor3        = Color3.new(1,1,1)
+    btn.Text              = text
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+    btn.MouseEnter:Connect(function()
+        btn:TweenBackgroundColor(Color3.fromRGB(65,65,68), "Out","Quad",.12,true)
+    end)
+    btn.MouseLeave:Connect(function()
+        btn:TweenBackgroundColor(Color3.fromRGB(45,45,48), "Out","Quad",.12,true)
+    end)
+    return btn
+end
+
+
+local egorBtn = makeButton("Egor Mode: OFF", 40)
+egorBtn.MouseButton1Click:Connect(function()
+    egorOn = not egorOn
+    egorBtn.Text = egorOn and "Egor Mode: ON" or "Egor Mode: OFF"
+    if egorOn then
+        RunService:BindToRenderStep("EgorRun", Enum.RenderPriority.Character.Value+1, function()
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                for _, t in ipairs(hum:GetPlayingAnimationTracks()) do
+                    t:AdjustSpeed(DEFAULTS.AnimSpeed)
+                end
+            end
+        end)
+    else
+        RunService:UnbindFromRenderStep("EgorRun")
+        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            for _, t in ipairs(hum:GetPlayingAnimationTracks()) do
+                t:AdjustSpeed(DEFAULTS.AnimSpeed)
+            end
+        end
+    end
+end)
+
+local freezeBtn = makeButton("Freeze Mode: OFF", 100)
+freezeBtn.MouseButton1Click:Connect(function()
+    freezeOn = not freezeOn
+    freezeBtn.Text = freezeOn and "Freeze Mode: ON" or "Freeze Mode: OFF"
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then hrp.Anchored = freezeOn end
+end)
+
+
+local inputs = {}
+local function makeLabel(name, y)
+    local lbl = Instance.new("TextLabel", frame)
+    lbl.Size               = UDim2.new(0,120,0,18)
+    lbl.Position           = UDim2.new(0,20,0,y)
+    lbl.BackgroundTransparency = 1
+    lbl.Font               = Enum.Font.Gotham
+    lbl.TextSize           = 14
+    lbl.TextColor3         = Color3.fromRGB(200,200,200)
+    lbl.Text               = name
+    return lbl
+end
+
+local function makeBox(name, y)
+    makeLabel(name, y)
+    local box = Instance.new("TextBox", frame)
+    box.Size               = UDim2.new(0,120,0,28)
+    box.Position           = UDim2.new(0,160,0,y)
+    box.PlaceholderText    = tostring(DEFAULTS[name])
+    box.ClearTextOnFocus   = false
+    box.Font               = Enum.Font.Gotham
+    box.TextSize           = 14
+    box.TextColor3         = Color3.new(1,1,1)
+    box.BackgroundColor3   = Color3.fromRGB(45,45,48)
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0,6)
+    inputs[name] = box
+    return box
+end
+
+makeBox("WalkSpeed", 160)
+makeBox("JumpPower", 208)
+makeBox("Gravity", 256)
+makeBox("AnimSpeed", 304)
+
+
+for name, box in pairs(inputs) do
+    box.FocusLost:Connect(function()
+        local v = tonumber(box.Text)
+        if not v then return end
+        if name == "WalkSpeed" then
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = v end
+        elseif name == "JumpPower" then
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.JumpPower = v end
+        elseif name == "Gravity" then
+            workspace.Gravity = v
+        end
+    end)
+end
+
+
+Players.LocalPlayer.CharacterAdded:Connect(function()
+    wait(0.5)
+    if egorOn then
+        RunService:BindToRenderStep("EgorRun", Enum.RenderPriority.Character.Value+1, function()
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                for _, t in ipairs(hum:GetPlayingAnimationTracks()) do
+                    t:AdjustSpeed(DEFAULTS.AnimSpeed)
+                end
+            end
+        end)
+    end
+    if freezeOn then
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.Anchored = true end
+    end
+end)
